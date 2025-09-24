@@ -1,16 +1,14 @@
 // src/app/dashboard/page.tsx
-'use client'; // <-- ¡MUY IMPORTANTE!
+'use client'; 
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // <-- CORREGIDO
+import { useRouter } from 'next/navigation';
 import { motorsData, Motor } from '@/app/data/mockMotors';
 import MotorCard from '@/app/components/MotorCard';
 import Header from '@/app/components/Heades';
 
 export default function DashboardPage() {
   const router = useRouter();
-  // Se usa un estado para saber si el código se está ejecutando en el cliente
-  // y así poder acceder a sessionStorage de forma segura.
   const [isClient, setIsClient] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [motors, setMotors] = useState<Motor[]>([]);
@@ -31,6 +29,21 @@ export default function DashboardPage() {
     }
   }, [isClient, router]);
 
+  // Esta es la función que maneja la lógica de cambio de estado
+  const handleToggleMotorStatus = (motorId: string) => {
+    setMotors(currentMotors => 
+      currentMotors.map(motor => {
+        if (motor.id === motorId) {
+          return {
+            ...motor,
+            status: motor.status === 'running' ? 'stopped' : 'running',
+          };
+        }
+        return motor;
+      })
+    );
+  };
+
   if (!isAuthenticated) {
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
   }
@@ -41,7 +54,12 @@ export default function DashboardPage() {
       <main className="container p-4 mx-auto md:p-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
           {motors.map((motor) => (
-            <MotorCard key={motor.id} motor={motor} />
+            // LA LÍNEA CLAVE QUE SOLUCIONA EL ERROR ESTÁ AQUÍ
+            <MotorCard 
+              key={motor.id} 
+              motor={motor} 
+              onToggleStatus={handleToggleMotorStatus} // <-- Esta prop faltaba
+            />
           ))}
         </div>
       </main>

@@ -1,64 +1,98 @@
+// src/components/MotorCard.tsx
 import { Motor } from '@/app/data/mockMotors';
-import { FiAlertTriangle, FiCheckCircle, FiPower, FiXCircle } from 'react-icons/fi';
+import { FiAlertTriangle, FiPower, FiXCircle } from 'react-icons/fi';
 
+// 1. Añadimos la nueva prop para la función de toggle
 interface MotorCardProps {
   motor: Motor;
+  onToggleStatus: (motorId: string) => void;
 }
 
 const StatusIndicator = ({ status }: { status: Motor['status'] }) => {
+  // ... (Esta parte no cambia)
   switch (status) {
     case 'running':
       return <div className="flex items-center text-green-600"><FiPower className="mr-2" /><span>Activo</span></div>;
     case 'stopped':
       return <div className="flex items-center text-gray-500"><FiXCircle className="mr-2" /><span>Detenido</span></div>;
     case 'maintenance':
-      return <div className="flex items-center text-red-600"><FiAlertTriangle className="mr-2" /><span>En Mantenimiento</span></div>;
+      return <div className="flex items-center text-orange-500"><FiAlertTriangle className="mr-2" /><span>Mantenimiento</span></div>;
   }
 };
 
-export default function MotorCard({ motor }: MotorCardProps) {
+export default function MotorCard({ motor, onToggleStatus }: MotorCardProps) {
   const usagePercentage = (motor.currentHours / motor.maintenanceThreshold) * 100;
 
   let progressBarColor = 'bg-green-500';
   let alert = false;
   if (usagePercentage > 75) progressBarColor = 'bg-yellow-500';
-  if (usagePercentage > 95) {
+  if (usagePercentage >= 100) { // Usamos >= 100 para la alerta
       progressBarColor = 'bg-red-500';
       alert = true;
   }
-  if (motor.status === 'maintenance') progressBarColor = 'bg-red-500';
+  if (motor.status === 'maintenance') progressBarColor = 'bg-orange-500';
 
 
   return (
-    <div className={`p-4 bg-white rounded-lg shadow-md border-l-4 ${alert ? 'border-red-500 animate-pulse' : 'border-transparent'}`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-800">{motor.name}</h2>
-        <span className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-200 rounded-full">{motor.id}</span>
-      </div>
-      <p className="text-sm text-gray-500">{motor.location}</p>
+    <div className={`flex flex-col p-4 bg-white rounded-lg shadow-md border-l-4 transition-all duration-300 ${alert && motor.status !== 'maintenance' ? 'border-red-500 animate-pulse' : 'border-transparent'}`}>
+      <div className="flex-grow">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-800">{motor.name}</h2>
+          <span className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-200 rounded-full">{motor.id}</span>
+        </div>
+        <p className="text-sm text-gray-500">{motor.location}</p>
 
-      <div className="my-4">
-        <div className="flex justify-between mb-1 text-sm font-medium text-gray-600">
-          <span>Horas de Uso</span>
-          <span>{motor.currentHours} / {motor.maintenanceThreshold} h</span>
+        <div className="my-4">
+          <div className="flex justify-between mb-1 text-sm font-medium text-gray-600">
+            <span>Horas de Uso</span>
+            <span>{motor.currentHours} / {motor.maintenanceThreshold} h</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className={`h-2.5 rounded-full transition-all duration-500 ${progressBarColor}`}
+              style={{ width: `${usagePercentage > 100 ? 100 : usagePercentage}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div
-            className={`h-2.5 rounded-full ${progressBarColor}`}
-            style={{ width: `${usagePercentage > 100 ? 100 : usagePercentage}%` }}
-          ></div>
+
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className="text-sm font-semibold">
+            <StatusIndicator status={motor.status} />
+          </div>
+          {alert && motor.status !== 'maintenance' && (
+              <div className="flex items-center text-sm font-bold text-red-600">
+                  <FiAlertTriangle className="mr-1" />
+                  ¡Mantenimiento Requerido!
+              </div>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t">
-        <div className="text-sm font-semibold">
-          <StatusIndicator status={motor.status} />
-        </div>
-        {alert && motor.status !== 'maintenance' && (
-            <div className="flex items-center text-sm font-bold text-red-600">
-                <FiAlertTriangle className="mr-1" />
-                ¡Mantenimiento Requerido!
-            </div>
+      {/* 2. Añadimos el botón de acción */}
+      <div className="mt-4">
+        {motor.status === 'running' && (
+          <button
+            onClick={() => onToggleStatus(motor.id)}
+            className="w-full px-4 py-2 font-bold text-white bg-red-600 rounded-md hover:bg-red-700"
+          >
+            Apagar Motor
+          </button>
+        )}
+        {motor.status === 'stopped' && (
+          <button
+            onClick={() => onToggleStatus(motor.id)}
+            className="w-full px-4 py-2 font-bold text-white bg-green-600 rounded-md hover:bg-green-700"
+          >
+            Encender Motor
+          </button>
+        )}
+        {motor.status === 'maintenance' && (
+          <button
+            disabled
+            className="w-full px-4 py-2 font-bold text-gray-800 bg-gray-300 rounded-md cursor-not-allowed"
+          >
+            En Mantenimiento
+          </button>
         )}
       </div>
     </div>
